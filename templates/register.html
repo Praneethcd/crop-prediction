@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - AgriPredict{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="auth-card fade-in">
+                    <div class="auth-header">
+                        <i class="fas fa-user-plus auth-icon"></i>
+                        <h2>Create Account</h2>
+                        <p>Join AgriPredict for smart farming solutions</p>
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('register') }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="full_name" class="form-label">
+                                    <i class="fas fa-user"></i> Full Name
+                                </label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" required
+                                       placeholder="Your full name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">
+                                    <i class="fas fa-at"></i> Username
+                                </label>
+                                <input type="text" class="form-control" id="username" name="username" required
+                                       placeholder="Choose a username">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope"></i> Email Address
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" required
+                                   placeholder="Your email address">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">
+                                    <i class="fas fa-phone"></i> Phone Number
+                                </label>
+                                <input type="tel" class="form-control" id="phone" name="phone"
+                                       placeholder="Your phone number">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">
+                                    <i class="fas fa-map-marker-alt"></i> Location
+                                </label>
+                                <input type="text" class="form-control" id="location" name="location"
+                                       placeholder="Your location">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock"></i> Password
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" required
+                                   placeholder="Create a password" minlength="6">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="role" class="form-label">
+                                <i class="fas fa-user-tag"></i> Register As
+                            </label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="farmer">Farmer</option>
+                                <option value="user">User</option>
+                            </select>
+                            <div class="form-text">
+                                <strong>Farmer:</strong> Access AI services, forum, and marketplace posting.
+                                <strong>User:</strong> Access AI services and forum.
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 auth-btn">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
+                    </form>
+
+                    <div class="auth-footer">
+                        <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

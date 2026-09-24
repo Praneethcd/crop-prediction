@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - AgriPredict{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="container">
+        <div class="dashboard-header">
+            <h2><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
+            <p>Manage your AgriPredict platform</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-card-icon bg-primary-green">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>{{ stats.total_users }}</h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-card-icon bg-success-green">
+                        <i class="fas fa-tractor"></i>
+                    </div>
+                    <h3>{{ stats.farmers }}</h3>
+                    <p>Farmers</p>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-card-icon bg-info-green">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3>{{ stats.users }}</h3>
+                    <p>Users</p>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-card-icon bg-warning-green">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>{{ stats.predictions }}</h3>
+                    <p>Predictions</p>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-card-icon bg-accent-green">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>{{ stats.forum_posts }}</h3>
+                    <p>Forum Posts</p>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-card-icon bg-dark-green">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <h3>{{ stats.listings }}</h3>
+                    <p>Listings</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="dashboard-card mb-4">
+            <div class="dashboard-card-header">
+                <h4><i class="fas fa-users-cog"></i> All Users</h4>
+            </div>
+            <div class="table-responsive">
+                <table class="table dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Phone</th>
+                            <th>Location</th>
+                            <th>Joined</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.full_name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if user.role == 'farmer' else 'primary' if user.role == 'user' else 'danger' }}">
+                                    {{ user.role|capitalize }}
+                                </span>
+                            </td>
+                            <td>{{ user.phone or '-' }}</td>
+                            <td>{{ user.location or '-' }}</td>
+                            <td>{{ user.created_at[:10] if user.created_at else '-' }}</td>
+                            <td>
+                                {% if user.role != 'admin' %}
+                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
+                                      style="display:inline" onsubmit="return confirm('Delete this user?')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Predictions -->
+        <div class="dashboard-card mb-4">
+            <div class="dashboard-card-header">
+                <h4><i class="fas fa-chart-line"></i> Recent Predictions</h4>
+            </div>
+            <div class="table-responsive">
+                <table class="table dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Type</th>
+                            <th>Result</th>
+                            <th>Date</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pred in recent_predictions %}
+                        <tr>
+                            <td>{{ pred.full_name }}</td>
+                            <td><span class="badge bg-{{ 'success' if pred.role == 'farmer' else 'primary' }}">{{ pred.role|capitalize }}</span></td>
+                            <td>{{ pred.prediction_type }}</td>
+                            <td>{{ pred.result[:50] }}{% if pred.result|length > 50 %}...{% endif %}</td>
+                            <td>{{ pred.created_at[:16] if pred.created_at else '-' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-view-details"
+                                        onclick="showPredictionDetails('{{ pred.prediction_type }}', '{{ pred.input_data | e }}', '{{ pred.result | e }}', '{{ pred.created_at }}', '{{ pred.full_name }}')">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center text-muted">No predictions yet</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Forum Posts & Marketplace -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <h4><i class="fas fa-comments"></i> Forum Posts</h4>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Author</th>
+                                    <th>Title</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for post in forum_posts %}
+                                <tr>
+                                    <td>{{ post.full_name }}</td>
+                                    <td>{{ post.title[:30] }}{% if post.title|length > 30 %}...{% endif %}</td>
+                                    <td>{{ post.created_at[:10] if post.created_at else '-' }}</td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('admin_delete_post', post_id=post.id) }}"
+                                              style="display:inline" onsubmit="return confirm('Delete this post?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="text-center text-muted">No forum posts yet</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <h4><i class="fas fa-store"></i> Marketplace Listings</h4>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Seller</th>
+                                    <th>Crop</th>
+                                    <th>Price</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for listing in marketplace_listings %}
+                                <tr>
+                                    <td>{{ listing.full_name }}</td>
+                                    <td>{{ listing.crop_name }}</td>
+                                    <td>{{ listing.price }}</td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('admin_delete_listing', listing_id=listing.id) }}"
+                                              style="display:inline" onsubmit="return confirm('Delete this listing?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="text-center text-muted">No listings yet</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Prediction Details Modal -->
+<div class="modal fade" id="predictionModal" tabindex="-1" aria-labelledby="predictionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content detail-modal">
+            <div class="modal-header detail-modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="detail-modal-icon" id="modalIcon"><i class="fas fa-chart-line"></i></span>
+                    <h5 class="modal-title" id="predictionModalLabel">Prediction Details</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body detail-modal-body">
+                <div class="detail-date" id="modalDate"></div>
+                <div class="detail-user-badge" id="modalUser" style="display:none;"></div>
+
+                <div class="detail-section">
+                    <h6 class="detail-section-title"><i class="fas fa-sign-in-alt"></i> Input Parameters</h6>
+                    <div class="detail-grid" id="modalInputGrid"></div>
+                </div>
+
+                <div class="detail-section">
+                    <h6 class="detail-section-title"><i class="fas fa-poll"></i> Result</h6>
+                    <div class="detail-result-box" id="modalResult"></div>
+                </div>
+            </div>
+            <div class="modal-footer detail-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const TYPE_CONFIG = {
+    'Yield Prediction':         { icon: 'fas fa-chart-line',   color: '#2d5016' },
+    'Disease Prediction':       { icon: 'fas fa-bug',          color: '#d62828' },
+    'Fertilizer Recommendation':{ icon: 'fas fa-flask',        color: '#f77f00' },
+    'Weather Prediction':       { icon: 'fas fa-cloud-sun',    color: '#0077b6' },
+    'Crop Recommendation':      { icon: 'fas fa-search-plus',  color: '#4a7c59' }
+};
+
+const LABEL_MAP = {
+    rainfall: 'Rainfall (mm)',
+    pesticide: 'Pesticide (tonnes)',
+    temperature: 'Temperature (\u00b0C)',
+    humidity: 'Humidity (%)',
+    crop: 'Crop',
+    soil_type: 'Soil Type',
+    season: 'Season',
+    year: 'Year',
+    location: 'Location',
+    field_size: 'Field Size (ha)'
+};
+
+function showPredictionDetails(type, inputRaw, result, date, userName) {
+    const cfg = TYPE_CONFIG[type] || { icon: 'fas fa-info-circle', color: '#4a7c59' };
+
+    document.getElementById('modalIcon').innerHTML = '<i class="' + cfg.icon + '"></i>';
+    document.getElementById('modalIcon').style.background = cfg.color;
+    document.getElementById('predictionModalLabel').textContent = type;
+
+    const dateEl = document.getElementById('modalDate');
+    if (date) {
+        const d = new Date(date);
+        dateEl.innerHTML = '<i class="fas fa-calendar-alt"></i> ' +
+            d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) +
+            ' at ' + d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+    } else {
+        dateEl.innerHTML = '';
+    }
+
+    const userEl = document.getElementById('modalUser');
+    if (userName) {
+        userEl.innerHTML = '<i class="fas fa-user"></i> ' + userName;
+        userEl.style.display = 'inline-block';
+    } else {
+        userEl.style.display = 'none';
+    }
+
+    const grid = document.getElementById('modalInputGrid');
+    grid.innerHTML = '';
+    try {
+        const decoded = inputRaw.replace(/&#39;/g, "'").replace(/&#34;/g, '"').replace(/&amp;/g, '&');
+        const data = JSON.parse(decoded);
+        for (const [key, value] of Object.entries(data)) {
+            const label = LABEL_MAP[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            const card = document.createElement('div');
+            card.className = 'detail-param-card';
+            card.innerHTML =
+                '<span class="detail-param-label">' + label + '</span>' +
+                '<span class="detail-param-value">' + value + '</span>';
+            grid.appendChild(card);
+        }
+    } catch (e) {
+        grid.innerHTML = '<div class="detail-param-card"><span class="detail-param-label">Raw Data</span><span class="detail-param-value">' + inputRaw + '</span></div>';
+    }
+
+    document.getElementById('modalResult').textContent = result.replace(/&#39;/g, "'").replace(/&#34;/g, '"').replace(/&amp;/g, '&');
+
+    new bootstrap.Modal(document.getElementById('predictionModal')).show();
+}
+</script>
+{% endblock %}

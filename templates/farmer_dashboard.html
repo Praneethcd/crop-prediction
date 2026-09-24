@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Farmer Dashboard - AgriPredict{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="container">
+        <div class="dashboard-header">
+            <h2><i class="fas fa-tractor"></i> Farmer Dashboard</h2>
+            <p>Welcome back, {{ session.full_name }}!</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-6 mb-3">
+                <a href="{{ url_for('crop_recommendation') }}" class="quick-action-card">
+                    <i class="fas fa-search-plus"></i>
+                    <span>Crop Recommendation</span>
+                </a>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <a href="{{ url_for('yield_prediction') }}" class="quick-action-card">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Yield Prediction</span>
+                </a>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <a href="{{ url_for('farmer_forum') }}" class="quick-action-card">
+                    <i class="fas fa-comments"></i>
+                    <span>Forum</span>
+                </a>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <a href="{{ url_for('farmer_marketplace') }}" class="quick-action-card">
+                    <i class="fas fa-store"></i>
+                    <span>Marketplace</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Prediction History -->
+        <div class="dashboard-card mb-4">
+            <div class="dashboard-card-header">
+                <h4><i class="fas fa-history"></i> My Prediction History</h4>
+            </div>
+            <div class="table-responsive">
+                <table class="table dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Input</th>
+                            <th>Result</th>
+                            <th>Date</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pred in predictions %}
+                        <tr>
+                            <td><span class="badge bg-success">{{ pred.prediction_type }}</span></td>
+                            <td>{{ pred.input_data[:50] }}{% if pred.input_data|length > 50 %}...{% endif %}</td>
+                            <td>{{ pred.result[:50] }}{% if pred.result|length > 50 %}...{% endif %}</td>
+                            <td>{{ pred.created_at[:16] if pred.created_at else '-' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-view-details"
+                                        onclick="showPredictionDetails('{{ pred.prediction_type }}', '{{ pred.input_data | e }}', '{{ pred.result | e }}', '{{ pred.created_at }}')">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted">No predictions yet. Try our AI services!</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- My Listings & Forum Posts -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <h4><i class="fas fa-store"></i> My Marketplace Listings</h4>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Crop</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for listing in listings %}
+                                <tr>
+                                    <td>{{ listing.crop_name }}</td>
+                                    <td>{{ listing.quantity }}</td>
+                                    <td>{{ listing.price }}</td>
+                                    <td>{{ listing.created_at[:10] if listing.created_at else '-' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="text-center text-muted">No listings yet</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <h4><i class="fas fa-comments"></i> My Forum Posts</h4>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for post in forum_posts %}
+                                <tr>
+                                    <td>{{ post.title[:30] }}{% if post.title|length > 30 %}...{% endif %}</td>
+                                    <td>{{ post.category }}</td>
+                                    <td>{{ post.created_at[:10] if post.created_at else '-' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="text-center text-muted">No forum posts yet</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Prediction Details Modal -->
+<div class="modal fade" id="predictionModal" tabindex="-1" aria-labelledby="predictionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content detail-modal">
+            <div class="modal-header detail-modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="detail-modal-icon" id="modalIcon"><i class="fas fa-chart-line"></i></span>
+                    <h5 class="modal-title" id="predictionModalLabel">Prediction Details</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body detail-modal-body">
+                <div class="detail-date" id="modalDate"></div>
+
+                <div class="detail-section">
+                    <h6 class="detail-section-title"><i class="fas fa-sign-in-alt"></i> Input Parameters</h6>
+                    <div class="detail-grid" id="modalInputGrid"></div>
+                </div>
+
+                <div class="detail-section">
+                    <h6 class="detail-section-title"><i class="fas fa-poll"></i> Result</h6>
+                    <div class="detail-result-box" id="modalResult"></div>
+                </div>
+            </div>
+            <div class="modal-footer detail-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const TYPE_CONFIG = {
+    'Yield Prediction':         { icon: 'fas fa-chart-line',   color: '#2d5016' },
+    'Disease Prediction':       { icon: 'fas fa-bug',          color: '#d62828' },
+    'Fertilizer Recommendation':{ icon: 'fas fa-flask',        color: '#f77f00' },
+    'Weather Prediction':       { icon: 'fas fa-cloud-sun',    color: '#0077b6' },
+    'Crop Recommendation':      { icon: 'fas fa-search-plus',  color: '#4a7c59' }
+};
+
+const LABEL_MAP = {
+    rainfall: 'Rainfall (mm)',
+    pesticide: 'Pesticide (tonnes)',
+    temperature: 'Temperature (\u00b0C)',
+    humidity: 'Humidity (%)',
+    crop: 'Crop',
+    soil_type: 'Soil Type',
+    season: 'Season',
+    year: 'Year',
+    location: 'Location',
+    field_size: 'Field Size (ha)'
+};
+
+function showPredictionDetails(type, inputRaw, result, date) {
+    const cfg = TYPE_CONFIG[type] || { icon: 'fas fa-info-circle', color: '#4a7c59' };
+
+    // Header icon
+    document.getElementById('modalIcon').innerHTML = '<i class="' + cfg.icon + '"></i>';
+    document.getElementById('modalIcon').style.background = cfg.color;
+    document.getElementById('predictionModalLabel').textContent = type;
+
+    // Date
+    const dateEl = document.getElementById('modalDate');
+    if (date) {
+        const d = new Date(date);
+        dateEl.innerHTML = '<i class="fas fa-calendar-alt"></i> ' +
+            d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) +
+            ' at ' + d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+    } else {
+        dateEl.innerHTML = '';
+    }
+
+    // Input parameters grid
+    const grid = document.getElementById('modalInputGrid');
+    grid.innerHTML = '';
+    try {
+        const decoded = inputRaw.replace(/&#39;/g, "'").replace(/&#34;/g, '"').replace(/&amp;/g, '&');
+        const data = JSON.parse(decoded);
+        for (const [key, value] of Object.entries(data)) {
+            const label = LABEL_MAP[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            const card = document.createElement('div');
+            card.className = 'detail-param-card';
+            card.innerHTML =
+                '<span class="detail-param-label">' + label + '</span>' +
+                '<span class="detail-param-value">' + value + '</span>';
+            grid.appendChild(card);
+        }
+    } catch (e) {
+        grid.innerHTML = '<div class="detail-param-card"><span class="detail-param-label">Raw Data</span><span class="detail-param-value">' + inputRaw + '</span></div>';
+    }
+
+    // Result
+    document.getElementById('modalResult').textContent = result.replace(/&#39;/g, "'").replace(/&#34;/g, '"').replace(/&amp;/g, '&');
+
+    new bootstrap.Modal(document.getElementById('predictionModal')).show();
+}
+</script>
+{% endblock %}
