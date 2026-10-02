@@ -48,7 +48,7 @@ jobs:
       - name: Start production container and verify health
         run: |
           docker run -d --name agripredict-ci -p 127.0.0.1:8000:8000 -e SECRET_KEY=ci-only-not-a-production-secret agripredict-ci
-          curl --fail --retry 20 --retry-connrefused --retry-delay 3 http://127.0.0.1:8000/healthz
+          curl --fail --retry 20 --retry-connrefused --retry-all-errors --retry-delay 3 http://127.0.0.1:8000/healthz
       - name: Show logs on failure
         if: failure()
         run: docker logs agripredict-ci || true
