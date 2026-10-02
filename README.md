@@ -130,4 +130,9 @@ Refer to the `app.py` file for the exact request payload and response structure 
 
 ## Contributing
 
-Contributions are welcome! If you have suggestions for improvements, bug fixes, or new features, please feel free to open an issue or submit a pull request. 
+Contributions are welcome! If you have suggestions for improvements, bug fixes, or new features, please feel free to open an issue or submit a pull request.
+## Integrated crop health and market decisions
+
+Open `/crop-intelligence` after sign-in for local MobileNetV3 leaf analysis, Prophet price forecasts, cash-aware selling allocation, severe-disease overrides and stop-loss alerts. See [implementation and API details](docs/CROP_INTELLIGENCE.md).
+
+Production hosting, persistent storage, Android APK builds, iOS sources and PWA installation are described in [deployment and mobile setup](docs/DEPLOYMENT_AND_MOBILE.md).

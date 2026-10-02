@@ -1,0 +1,32 @@
+name: Build Android APK
+on:
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: Deployed HTTPS AgriPredict URL (without trailing slash)
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build installable testing APK
+        working-directory: mobile/android
+        env:
+          AGRIPREDICT_URL: ${{ inputs.app_url }}
+        run: gradle assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AgriPredict-Android-testing-APK
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk

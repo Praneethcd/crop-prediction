@@ -6,6 +6,9 @@ import json
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from models.prediction_models import PredictionModels
+from dotenv import load_dotenv
+load_dotenv()
+
 from database import (
     init_db, get_user_by_email, get_user_by_id, create_user,
     save_prediction, get_user_predictions, save_forum_post, get_forum_posts,
@@ -14,11 +17,32 @@ from database import (
     get_recent_predictions, delete_forum_post, delete_marketplace_listing
 )
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app = Flask(__name__, instance_path=os.path.abspath(os.getenv('AGRIPREDICT_INSTANCE_PATH', 'instance')))
+# Persist a private development key; production can supply SECRET_KEY via environment.
+from pathlib import Path
+import secrets
+secret_path=Path(app.instance_path)/'session.key'
+secret_path.parent.mkdir(parents=True,exist_ok=True)
+if not os.getenv('SECRET_KEY') and not secret_path.exists():
+    try:
+        with os.fdopen(os.open(secret_path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as secret_file:
+            secret_file.write(secrets.token_hex(32))
+    except FileExistsError:
+        pass
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or secret_path.read_text().strip()
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('APP_ENV') == 'production'
+if os.getenv('APP_ENV') == 'production' and not os.getenv('SECRET_KEY'):
+    raise RuntimeError('Production requires SECRET_KEY')
 
 # Initialize database
 init_db()
+
+from services.routes import bp as intelligence_bp, initialize as initialize_intelligence
+initialize_intelligence()
+app.register_blueprint(intelligence_bp)
+app.config['MAX_CONTENT_LENGTH'] = 6 * 1024 * 1024
 
 # Initialize prediction models
 try:
@@ -28,6 +52,29 @@ except Exception as e:
     print(f"Error loading models: {e}")
     models_loaded = False
 
+
+
+@app.route('/healthz')
+def healthz():
+    from database import get_db
+    db=get_db()
+    try:
+        db.execute('SELECT 1').fetchone()
+        return jsonify(status='ok')
+    finally:
+        db.close()
+
+@app.route('/manifest.webmanifest')
+def manifest():
+    from flask import send_from_directory
+    return send_from_directory(app.static_folder, 'manifest.webmanifest', mimetype='application/manifest+json')
+
+@app.route('/service-worker.js')
+def service_worker():
+    from flask import send_from_directory
+    response=send_from_directory(app.static_folder, 'service-worker.js', mimetype='application/javascript')
+    response.headers['Cache-Control']='no-cache'
+    return response
 
 # --- Auth Decorators ---
 def login_required(f):
@@ -1378,4 +1425,7 @@ def generate_nearby_farmers(location, crop_interest):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    if os.getenv('CROP_MONITOR_ENABLED','1') == '1':
+        from services.monitor import start_monitor
+        start_monitor(max(30,int(os.getenv('CROP_MONITOR_INTERVAL_SECONDS','900'))))
+    app.run(debug=False, host=os.getenv('HOST','127.0.0.1'), port=int(os.getenv('PORT','5001')))

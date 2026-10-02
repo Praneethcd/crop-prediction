@@ -1,0 +1,40 @@
+name: Verify platform and mobile clients
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  platform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: pip install 'torch>=2.6,<3' 'torchvision>=0.21,<1' --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m unittest discover -s tests -v
+      - run: node --check static/js/crop-intelligence.js
+  android-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile only (placeholder origin; no app distributed)
+        working-directory: mobile/android
+        run: gradle -PappUrl=https://example.invalid assembleDebug
+  ios-compile:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile unsigned simulator client (no iPhone distribution)
+        run: xcodebuild -project mobile/ios/AgriPredict.xcodeproj -scheme AgriPredict -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO AGRIPREDICT_URL=https://example.invalid build

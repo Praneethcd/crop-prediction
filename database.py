@@ -3,13 +3,14 @@ import os
 from werkzeug.security import generate_password_hash
 from datetime import datetime
 
-DATABASE = 'agripredict.db'
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'agripredict.db')
 
 
 def get_db():
     """Get a database connection."""
-    db = sqlite3.connect(DATABASE)
+    db = sqlite3.connect(os.getenv("AGRIPREDICT_DATABASE", DATABASE), timeout=30)
     db.row_factory = sqlite3.Row
+    db.execute("PRAGMA foreign_keys = ON")
     return db
 
 
@@ -67,13 +68,17 @@ def init_db():
     ''')
 
     # Create default admin if not exists
+    admin_email=os.getenv('ADMIN_EMAIL') or 'admin@agripredict.com'
+    admin_password=os.getenv('ADMIN_PASSWORD')
+    if not admin_password and os.getenv('APP_ENV') != 'production':
+        admin_password='admin123'
     admin = cursor.execute('SELECT id FROM users WHERE email = ?',
-                           ('admin@agripredict.com',)).fetchone()
-    if not admin:
+                           (admin_email,)).fetchone()
+    if not admin and admin_password:
         cursor.execute(
-            'INSERT INTO users (username, email, password_hash, role, full_name) VALUES (?, ?, ?, ?, ?)',
-            ('admin', 'admin@agripredict.com',
-             generate_password_hash('admin123'), 'admin', 'Administrator')
+            'INSERT OR IGNORE INTO users (username, email, password_hash, role, full_name) VALUES (?, ?, ?, ?, ?)',
+            ('admin', admin_email,
+             generate_password_hash(admin_password), 'admin', 'Administrator')
         )
 
     db.commit()

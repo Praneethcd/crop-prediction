@@ -1,0 +1,17 @@
+plugins { id 'com.android.application' }
+def appUrl = providers.gradleProperty('appUrl').orElse(providers.environmentVariable('AGRIPREDICT_URL')).getOrElse('')
+if (!appUrl.startsWith('https://')) throw new GradleException('Set -PappUrl=https://your-deployed-site to build an app that points to the real deployment')
+android {
+    namespace 'com.agripredict.app'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.agripredict.app'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+        buildConfigField 'String', 'APP_URL', '"' + appUrl.replace('"','').replace('\\','') + '"'
+    }
+    buildFeatures { buildConfig true }
+}
+dependencies { implementation 'androidx.core:core:1.17.0' }

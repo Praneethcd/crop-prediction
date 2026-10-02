@@ -1,0 +1,112 @@
+{
+  "version": "plantvillage-mobilenetv3-d76fe187be1c",
+  "architecture": "mobilenet_v3_small",
+  "source": "https://huggingface.co/imaflower/plantvillage-mobilenetv3",
+  "revision": "d76fe187be1c4c3a5474f835a7a70cd08c7ab085",
+  "license": "MIT",
+  "image_size": 224,
+  "resize_size": 256,
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "sha256": "d152d813bb34ef39721ce8a57e394fd2307c980fec1a18d877a94d68e770b961",
+  "classes": [
+    {
+      "crop": "Pepper",
+      "label": "Pepper Bacterial spot",
+      "disease": "Bacterial spot",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Pepper",
+      "label": "Pepper healthy",
+      "disease": "healthy",
+      "severity": "none"
+    },
+    {
+      "crop": "Potato",
+      "label": "Potato Early blight",
+      "disease": "Early blight",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Potato",
+      "label": "Potato Late blight",
+      "disease": "Late blight",
+      "severity": "severe"
+    },
+    {
+      "crop": "Potato",
+      "label": "Potato healthy",
+      "disease": "healthy",
+      "severity": "none"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato Bacterial spot",
+      "disease": "Bacterial spot",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato Early blight",
+      "disease": "Early blight",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato Late blight",
+      "disease": "Late blight",
+      "severity": "severe"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato Leaf Mold",
+      "disease": "Leaf Mold",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato Septoria leaf spot",
+      "disease": "Septoria leaf spot",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato Spider mites Two spotted spider mite",
+      "disease": "Spider mites Two spotted spider mite",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato Target Spot",
+      "disease": "Target Spot",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato Tomato YellowLeaf Curl Virus",
+      "disease": "Tomato YellowLeaf Curl Virus",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato Tomato mosaic virus",
+      "disease": "Tomato mosaic virus",
+      "severity": "moderate"
+    },
+    {
+      "crop": "Tomato",
+      "label": "Tomato healthy",
+      "disease": "healthy",
+      "severity": "none"
+    }
+  ]
+}
