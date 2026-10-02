@@ -38,3 +38,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: Compile unsigned simulator client (no iPhone distribution)
         run: xcodebuild -project mobile/ios/AgriPredict.xcodeproj -scheme AgriPredict -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO AGRIPREDICT_URL=https://example.invalid build
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t agripredict-ci .
+      - name: Start production container and verify health
+        run: |
+          docker run -d --name agripredict-ci -p 127.0.0.1:8000:8000 -e SECRET_KEY=ci-only-not-a-production-secret agripredict-ci
+          curl --fail --retry 20 --retry-connrefused --retry-delay 3 http://127.0.0.1:8000/healthz
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs agripredict-ci || true
