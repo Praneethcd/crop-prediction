@@ -13,6 +13,7 @@ from services.market_feed import refresh_quotes, cached_quotes, save_quotes, Fee
 from services.monitor import latest_disease, evaluate_lot
 from services.remedies import canonical_crop
 from services.vision import predict
+from services.history_import import parse_csv, validate_forecast
 
 bp = Blueprint('intelligence', __name__)
 
@@ -258,6 +259,36 @@ def import_history():
         save_quotes(db,lot['id'],[{'date':d.isoformat(),'price':p} for d,p in dated],'farmer-imported history')
         db.commit()
         return jsonify(imported=len(dated))
+    finally:db.close()
+
+
+@bp.route('/market-history/import', methods=['POST'])
+@authenticated
+def import_csv_history():
+    db=get_db()
+    try:
+        lot=owned_lot(db,request.form.get('lot_id'))
+        upload=request.files.get('file')
+        if not upload:raise ValueError('CSV file required')
+        dated=parse_csv(upload.read(1024*1024+1),lot,request.form.get('price_unit','quintal'))
+        source=request.form.get('source_label','Farmer-supplied CSV').strip()[:200]
+        if not source:raise ValueError('Source description required')
+        save_quotes(db,lot['id'],[{'date':d.isoformat(),'price':p} for d,p in dated],source)
+        db.commit()
+        return jsonify(imported=len(dated),source=source)
+    finally:db.close()
+
+
+@bp.route('/market-validation', methods=['POST'])
+@authenticated
+def market_validation():
+    data=request.get_json()
+    if not isinstance(data,dict):raise ValueError('JSON object required')
+    db=get_db()
+    try:
+        lot=owned_lot(db,data.get('lot_id'))
+        rows=validate_history(cached_quotes(db,lot['id']))
+        return jsonify(validate_forecast(rows))
     finally:db.close()
 
 

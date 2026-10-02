@@ -85,12 +85,14 @@
   el('import-prices').addEventListener('click',()=>work(el('import-prices'),async()=>{
     const d=await api('/market-history',{lot_id:lotId(),history:historyRows()});el('price-status').textContent=`Saved ${d.imported} historical observations.`;
   }));
-  el('csv-history').addEventListener('change',async()=>{
-    try {
-      const f=el('csv-history').files[0];if(!f)return;if(f.size>100000)throw new Error('CSV must be below 100 KB.');
-      const lines=(await f.text()).trim().split(/\r?\n/);if(/^date\s*,\s*price$/i.test(lines[0]))lines.shift();el('history').value=lines.join('\n');
-    } catch(e){error(e.message);}
-  });
+  el('upload-history').addEventListener('click',()=>work(el('upload-history'),async()=>{
+    const file=el('csv-history').files[0];if(!file)throw new Error('Choose a CSV file.');
+    const form=new FormData();form.append('lot_id',lotId());form.append('file',file);form.append('price_unit',el('csv-unit').value);form.append('source_label',el('csv-source').value);
+    const d=await api('/market-history/import',form);setPrices(await api(`/market-prices?lot_id=${lotId()}`));el('price-status').textContent=`Saved ${d.imported} observations from ${d.source}.`;
+  }));
+  el('validate-forecast').addEventListener('click',()=>work(el('validate-forecast'),async()=>{
+    const d=await api('/market-validation',{lot_id:lotId()});el('validation-output').textContent=`Held-out ${d.observations} observations (${d.from_date}–${d.to_date}): MAE ${money(d.mae)}/quintal, RMSE ${money(d.rmse)}, MAPE ${d.mape_pct}%. Unchanged-price baseline MAE ${money(d.baseline_mae)}. ${d.notice}`;
+  }));
   function renderDecision(d){
     decisionId=d.id;el('action').textContent=d.disease_override?'SELL 100% IMMEDIATELY':d.action.replaceAll('_',' ');
     el('reason').textContent=d.reason;el('urgent').hidden=!d.urgent;el('sell-bar').style.width=d.sell_pct+'%';el('hold-bar').style.width=d.hold_pct+'%';el('gauge').setAttribute('aria-label',`Sell ${d.sell_pct}%, hold ${d.hold_pct}%`);
